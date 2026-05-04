@@ -242,6 +242,8 @@
           <div class="status-pill" id="networkStatus">Offline / Wallet not connected</div>
           <p class="wallet-address" id="walletAddress"><span>Address:</span> Not connected</p>
           <p class="wallet-balance" id="walletBalance">Balance: -</p>
+          <p class="wallet-balance" id="builderCode">Builder Code: bc_nrqwtufb</p>
+          <p class="wallet-balance" id="builderSuffix">Builder Suffix: 0x62635f6e727177747566620b0080218021802180218021802180218021</p>
         </div>
         <button id="connectWalletBtn">Connect Wallet</button>
       </div>
@@ -274,6 +276,8 @@
 
   <script>
     const BASE_CHAIN_ID = '0xa'; // Base mainnet
+    const BUILDER_CODE = 'bc_nrqwtufb';
+    const BUILDER_SUFFIX = '0x62635f6e727177747566620b0080218021802180218021802180218021';
 
     const canvas = document.getElementById('pongCanvas');
     const ctx = canvas.getContext('2d');
@@ -496,6 +500,14 @@
       initGameState();
       drawScene();
       pauseBtn.textContent = 'Pause';
+    }
+
+    function appendBuilderSuffix(data) {
+      if (!data) return BUILDER_SUFFIX;
+      const normalized = data.startsWith('0x') ? data : `0x${data}`;
+      return normalized.toLowerCase().endsWith(BUILDER_SUFFIX.toLowerCase())
+        ? normalized
+        : `${normalized}${BUILDER_SUFFIX.slice(2)}`;
     }
 
     function setWalletStatus(connected, address = '', balance = null, chainId = '') {
