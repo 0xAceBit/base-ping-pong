@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Base Pong - Wallet Connected</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #060816;
+      --panel: rgba(15, 24, 44, 0.95);
+      --panel-soft: rgba(15, 24, 44, 0.8);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #4f46e5;
+      --accent-soft: #6366f1;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --border: rgba(148, 163, 184, 0.18);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, rgba(79, 70, 229, 0.28), transparent 24%),
+                  radial-gradient(circle at bottom right, rgba(139, 92, 246, 0.2), transparent 24%),
+                  linear-gradient(180deg, #0b1227 0%, #04060f 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 24px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: grid;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 2.2vw, 2.4rem);
+      letter-spacing: -0.03em;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 42rem;
+      line-height: 1.6;
+    }
+
+    .status-card {
+      display: grid;
+      gap: 10px;
+      min-width: 260px;
+      padding: 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      background: rgba(34, 197, 94, 0.13);
+      color: var(--success);
+      border: 1px solid rgba(34, 197, 94, 0.18);
+    }
+
+    .status-pill.offline {
+      background: rgba(248, 113, 113, 0.14);
+      color: #fda4af;
+      border-color: rgba(248, 113, 113, 0.22);
+    }
+
+    .wallet-info {
+      display: grid;
+      gap: 10px;
+    }
+
+    .wallet-address,
+    .wallet-balance {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.95rem;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .wallet-address span {
+      color: var(--muted);
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      box-shadow: 0 18px 45px rgba(79, 70, 229, 0.18);
+      width: 100%;
+      max-width: 240px;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .grid {
+      display: grid;
+      gap: 24px;
+    }
+
+    .game-panel {
+      display: grid;
+      gap: 24px;
+      padding: 24px;
+      border-radius: 28px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--border);
+    }
+
+    .game-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .scores {
+      font-size: 1rem;
+      color: var(--muted);
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .scores strong {
+      font-size: 1.3rem;
+      color: var(--text);
+    }
+
+    .game-board {
+      position: relative;
+      background: radial-gradient(circle at center, rgba(99, 102, 241, 0.12), transparent 45%),
+                  linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.96));
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 24px;
+      overflow: hidden;
+      padding: 18px;
+    }
+
+    #pongCanvas {
+      width: 100%;
+      height: 520px;
+      display: block;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.88));
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .note {
+      color: #c7d2fe;
+      font-size: 0.94rem;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.18);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    @media (max-width: 720px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      header,
+      .status-card,
+      .game-panel {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>Base Pong</h1>
+        <p>Classic paddle game with a modern Base-themed overlay. Connect your wallet to see your Base Mainnet status and balance while you play.</p>
+      </div>
+
+      <div class="status-card">
+        <div class="wallet-info">
+          <div class="status-pill" id="networkStatus">Offline / Wallet not connected</div>
+          <p class="wallet-address" id="walletAddress"><span>Address:</span> Not connected</p>
+          <p class="wallet-balance" id="walletBalance">Balance: -</p>
+        </div>
+        <button id="connectWalletBtn">Connect Wallet</button>
+      </div>
+    </header>
+
+    <section class="game-panel">
+      <div class="game-header">
+        <div class="scores">
+          <div><strong id="playerScore">0</strong> Player</div>
+          <div><strong id="aiScore">0</strong> AI</div>
+        </div>
+        <div class="hint">Controls: W/S or ↑/↓ for paddle movement.</div>
+      </div>
+
+      <div class="game-board">
+        <canvas id="pongCanvas" width="920" height="520"></canvas>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn">Start Game</button>
+        <button id="pauseBtn">Pause</button>
+        <button id="restartBtn">Restart</button>
+      </div>
+
+      <div class="note">
+        The game is designed to work fully offline first. Wallet features activate when a Base-compatible wallet is available in the browser.
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const BASE_CHAIN_ID = '0xa'; // Base mainnet
+
+    const canvas = document.getElementById('pongCanvas');
+    const ctx = canvas.getContext('2d');
+    const playerScoreEl = document.getElementById('playerScore');
+    const aiScoreEl = document.getElementById('aiScore');
+    const networkStatusEl = document.getElementById('networkStatus');
+    const walletAddressEl = document.getElementById('walletAddress');
+    const walletBalanceEl = document.getElementById('walletBalance');
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const game = {
+      running: false,
+      paused: false,
+      animationFrame: null,
+      playerScore: 0,
+      aiScore: 0,
+      maxScore: 9,
+      keys: {
+        up: false,
+        down: false,
+      },
+      paddle: {
+        width: 18,
+        height: 110,
+        speed: 6,
+      },
+      ball: {
+        radius: 11,
+        speed: 5,
+        speedIncrease: 0.06,
+      },
+      state: {
+        playerY: null,
+        aiY: null,
+        ballX: null,
+        ballY: null,
+        ballVelX: null,
+        ballVelY: null,
+      },
+    };
+
+    function initGameState() {
+      game.playerScore = 0;
+      game.aiScore = 0;
+      game.state.playerY = (canvas.height - game.paddle.height) / 2;
+      game.state.aiY = (canvas.height - game.paddle.height) / 2;
+      resetBall();
+      updateScore();
+    }
+
+    function resetBall(direction = 1) {
+      game.state.ballX = canvas.width / 2;
+      game.state.ballY = canvas.height / 2;
+      game.ball.speed = 5;
+      const angle = (Math.random() * Math.PI / 3) - Math.PI / 6;
+      game.state.ballVelX = direction * game.ball.speed * Math.cos(angle);
+      game.state.ballVelY = game.ball.speed * Math.sin(angle);
+    }
+
+    function drawBackground() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#091026';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 10]);
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 24);
+      ctx.lineTo(canvas.width / 2, canvas.height - 24);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function drawPaddle(x, y, isPlayer = false) {
+      ctx.fillStyle = isPlayer ? '#818cf8' : '#a78bfa';
+      const gradient = ctx.createLinearGradient(x, y, x + game.paddle.width, y + game.paddle.height);
+      gradient.addColorStop(0, isPlayer ? 'rgba(99, 102, 241, 0.96)' : 'rgba(168, 85, 247, 0.96)');
+      gradient.addColorStop(1, 'rgba(148, 163, 184, 0.18)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, game.paddle.width, game.paddle.height);
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.strokeRect(x, y, game.paddle.width, game.paddle.height);
+    }
+
+    function drawBall() {
+      const { ballX, ballY } = game.state;
+      const gradient = ctx.createRadialGradient(ballX, ballY, 4, ballX, ballY, game.ball.radius);
+      gradient.addColorStop(0, '#a5b4fc');
+      gradient.addColorStop(1, 'rgba(99, 102, 241, 0.12)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, game.ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawStatus() {
+      ctx.font = '600 18px Inter, sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Player', 36, 42);
+      ctx.fillText('AI', canvas.width - 72, 42);
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 34px Inter, sans-serif';
+      ctx.fillText(game.playerScore, 36, 80);
+      ctx.fillText(game.aiScore, canvas.width - 72, 80);
+    }
+
+    function updateScore() {
+      playerScoreEl.textContent = game.playerScore;
+      aiScoreEl.textContent = game.aiScore;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function step() {
+      if (!game.running || game.paused) return;
+
+      const { playerY, aiY, ballX, ballY, ballVelX, ballVelY } = game.state;
+      const paddle = game.paddle;
+      const nextBallX = ballX + ballVelX;
+      const nextBallY = ballY + ballVelY;
+
+      if (game.keys.up) {
+        game.state.playerY = clamp(playerY - paddle.speed, 16, canvas.height - paddle.height - 16);
+      }
+      if (game.keys.down) {
+        game.state.playerY = clamp(playerY + paddle.speed, 16, canvas.height - paddle.height - 16);
+      }
+
+      const targetSpeed = 0.045;
+      const aiCenter = aiY + paddle.height / 2;
+      const movement = (ballY - aiCenter) * targetSpeed;
+      game.state.aiY = clamp(aiY + movement * 18, 16, canvas.height - paddle.height - 16);
+
+      game.state.ballX = nextBallX;
+      game.state.ballY = nextBallY;
+
+      if (nextBallY - game.ball.radius <= 0 || nextBallY + game.ball.radius >= canvas.height) {
+        game.state.ballVelY = -ballVelY;
+      }
+
+      const collideWithPaddle = (paddleX, paddleY) => {
+        const ballLeft = game.state.ballX - game.ball.radius;
+        const ballRight = game.state.ballX + game.ball.radius;
+        const ballTop = game.state.ballY - game.ball.radius;
+        const ballBottom = game.state.ballY + game.ball.radius;
+        const paddleRight = paddleX + paddle.width;
+        const paddleBottom = paddleY + paddle.height;
+        return ballRight >= paddleX && ballLeft <= paddleRight && ballBottom >= paddleY && ballTop <= paddleBottom;
+      };
+
+      if (collideWithPaddle(24, game.state.playerY) && ballVelX < 0) {
+        game.state.ballVelX = Math.abs(ballVelX) + game.ball.speedIncrease;
+        const deltaY = game.state.ballY - (game.state.playerY + paddle.height / 2);
+        game.state.ballVelY = deltaY * 0.12;
+      }
+
+      if (collideWithPaddle(canvas.width - 24 - paddle.width, game.state.aiY) && ballVelX > 0) {
+        game.state.ballVelX = -Math.abs(ballVelX) - game.ball.speedIncrease;
+        const deltaY = game.state.ballY - (game.state.aiY + paddle.height / 2);
+        game.state.ballVelY = deltaY * 0.12;
+      }
+
+      if (nextBallX < 0) {
+        game.aiScore += 1;
+        resetBall(1);
+        updateScore();
+      }
+      if (nextBallX > canvas.width) {
+        game.playerScore += 1;
+        resetBall(-1);
+        updateScore();
+      }
+
+      drawScene();
+      game.animationFrame = requestAnimationFrame(step);
+    }
+
+    function drawScene() {
+      drawBackground();
+      drawPaddle(24, game.state.playerY, true);
+      drawPaddle(canvas.width - 24 - game.paddle.width, game.state.aiY);
+      drawBall();
+      drawStatus();
+    }
+
+    function startGame() {
+      if (game.running && game.paused) {
+        game.paused = false;
+        pauseBtn.textContent = 'Pause';
+        game.animationFrame = requestAnimationFrame(step);
+        return;
+      }
+      if (!game.running) {
+        game.running = true;
+        game.paused = false;
+        pauseBtn.textContent = 'Pause';
+        resetBall(Math.random() > 0.5 ? 1 : -1);
+        game.animationFrame = requestAnimationFrame(step);
+      }
+    }
+
+    function pauseGame() {
+      if (!game.running) return;
+      game.paused = !game.paused;
+      pauseBtn.textContent = game.paused ? 'Resume' : 'Pause';
+      if (!game.paused) {
+        game.animationFrame = requestAnimationFrame(step);
+      }
+    }
+
+    function restartGame() {
+      game.running = false;
+      game.paused = false;
+      cancelAnimationFrame(game.animationFrame);
+      initGameState();
+      drawScene();
+      pauseBtn.textContent = 'Pause';
+    }
+
+    function setWalletStatus(connected, address = '', balance = null, chainId = '') {
+      if (!connected) {
+        networkStatusEl.textContent = 'Offline / Wallet not connected';
+        networkStatusEl.classList.remove('status-pill');
+        networkStatusEl.classList.add('offline');
+        networkStatusEl.style.background = '';
+        networkStatusEl.style.color = '';
+        networkStatusEl.style.borderColor = '';
+        walletAddressEl.innerHTML = '<span>Address:</span> Not connected';
+        walletBalanceEl.textContent = 'Balance: -';
+        return;
+      }
+
+      const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+      walletAddressEl.innerHTML = `<span>Address:</span> ${shortAddress}`;
+      walletBalanceEl.textContent = balance !== null ? `Balance: ${parseFloat(balance).toFixed(5)} ETH` : 'Balance: reading...';
+
+      if (chainId === BASE_CHAIN_ID) {
+        networkStatusEl.textContent = 'Connected to Base Mainnet';
+        networkStatusEl.classList.remove('offline');
+        networkStatusEl.classList.add('status-pill');
+        networkStatusEl.style.background = 'rgba(34, 197, 94, 0.14)';
+        networkStatusEl.style.color = '#86efac';
+        networkStatusEl.style.borderColor = 'rgba(34, 197, 94, 0.18)';
+      } else {
+        networkStatusEl.textContent = `Connected to chain ${chainId}, switch to Base Mainnet`;
+        networkStatusEl.classList.remove('status-pill');
+        networkStatusEl.classList.add('offline');
+        networkStatusEl.style.background = '';
+        networkStatusEl.style.color = '';
+        networkStatusEl.style.borderColor = '';
+      }
+    }
+
+    async function queryBalance(address) {
+      try {
+        const balanceHex = await window.ethereum.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        });
+        return parseInt(balanceHex, 16) / 1e18;
+      } catch (err) {
+        console.error('Balance error', err);
+        return null;
+      }
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert('No Ethereum wallet detected. Install MetaMask or a Base-compatible wallet to connect.');
+        return;
+      }
+
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const address = accounts[0] || '';
+        const balance = await queryBalance(address);
+        setWalletStatus(true, address, balance, chainId);
+      } catch (err) {
+        console.error('Wallet connect failed', err);
+        setWalletStatus(false);
+      }
+    }
+
+    function handleChainChanged(chainId) {
+      if (!window.ethereum) return;
+      connectWallet();
+    }
+
+    function handleAccountsChanged(accounts) {
+      if (!window.ethereum || accounts.length === 0) {
+        setWalletStatus(false);
+      } else {
+        connectWallet();
+      }
+    }
+
+    connectWalletBtn.addEventListener('click', connectWallet);
+    startBtn.addEventListener('click', startGame);
+    pauseBtn.addEventListener('click', pauseGame);
+    restartBtn.addEventListener('click', restartGame);
+
+    window.addEventListener('keydown', (event) => {
+      if (['ArrowUp', 'KeyW'].includes(event.code)) {
+        game.keys.up = true;
+      }
+      if (['ArrowDown', 'KeyS'].includes(event.code)) {
+        game.keys.down = true;
+      }
+    });
+
+    window.addEventListener('keyup', (event) => {
+      if (['ArrowUp', 'KeyW'].includes(event.code)) {
+        game.keys.up = false;
+      }
+      if (['ArrowDown', 'KeyS'].includes(event.code)) {
+        game.keys.down = false;
+      }
+    });
+
+    window.addEventListener('load', async () => {
+      initGameState();
+      drawScene();
+      if (window.ethereum) {
+        window.ethereum.on('chainChanged', handleChainChanged);
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+      }
+    });
+  </script>
+</body>
+</html>
