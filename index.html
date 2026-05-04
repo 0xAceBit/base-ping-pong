@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="base:app_id" content="69f8b25bd29164bd2663d17a" />
   <title>Base Pong - Wallet Connected</title>
   <style>
     :root {
@@ -187,10 +188,11 @@
 
     #pongCanvas {
       width: 100%;
-      height: 520px;
+      height: min(520px, 60vh);
       display: block;
       border-radius: 20px;
       background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.88));
+      touch-action: none;
     }
 
     .controls {
@@ -251,7 +253,7 @@
           <div><strong id="playerScore">0</strong> Player</div>
           <div><strong id="aiScore">0</strong> AI</div>
         </div>
-        <div class="hint">Controls: W/S or ↑/↓ for paddle movement.</div>
+        <div class="hint">Controls: W/S or ↑/↓ for paddle movement. Touch or drag on the screen to move on mobile.</div>
       </div>
 
       <div class="game-board">
@@ -595,6 +597,33 @@
       if (['ArrowDown', 'KeyS'].includes(event.code)) {
         game.keys.down = false;
       }
+    });
+
+    function setPlayerYFromPointer(clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scale = canvas.height / rect.height;
+      const pointerY = (clientY - rect.top) * scale;
+      game.state.playerY = clamp(pointerY - game.paddle.height / 2, 16, canvas.height - game.paddle.height - 16);
+    }
+
+    let pointerActive = false;
+
+    canvas.addEventListener('pointerdown', (event) => {
+      pointerActive = true;
+      setPlayerYFromPointer(event.clientY);
+    });
+
+    canvas.addEventListener('pointermove', (event) => {
+      if (!pointerActive) return;
+      setPlayerYFromPointer(event.clientY);
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      pointerActive = false;
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+      pointerActive = false;
     });
 
     window.addEventListener('load', async () => {
